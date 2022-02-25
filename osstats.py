@@ -166,7 +166,7 @@ def process_node(config, node, is_master_shard, duration):
         config['tls']
     )
 
-    print(f"Processing node {params[0]}:{params[1]}")
+    print("Processing node %s:%s".format(params[0], params[1]))
     result = {}
 
     # first run
