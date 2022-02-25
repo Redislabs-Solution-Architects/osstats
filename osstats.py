@@ -359,7 +359,7 @@ def process_database(config, section, workbook, duration):
         print(f"Connected to {section} database")
     except BaseException:
         print(f"Error connecting to {section} database")
-        return ""
+        return workbook
 
     info = client.execute_command('info')
     is_clustered = False
