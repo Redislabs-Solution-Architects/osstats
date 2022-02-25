@@ -4,7 +4,6 @@ import os
 import sys
 import argparse
 import configparser
-from pyparsing import empty
 import redis
 import openpyxl
 import concurrent.futures
