@@ -1,0 +1,14 @@
+[redis-db1]
+host        = 127.0.0.1
+port        = 6379
+tls         = False
+username    = ; Usernane in case ACL access in enabled
+password    = ; Password that applies either in db or user (ACL)
+
+
+[redis-db2]
+host        = 127.0.0.1
+port        = 6379
+tls         = False
+username    = ; Usernane in case ACL access in enabled
+password    = ; Password that applies either in db or user (ACL)
