@@ -5,7 +5,7 @@ TBD
 
 ## Installation
 
-TBD
+The script will run on any system with Python 3.6 or greater installed.
 
 ### Running the script from source
 

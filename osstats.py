@@ -383,6 +383,11 @@ def process_database(config, section, workbook, duration):
 
 
 def main():
+    if not sys.version_info >= (3, 6):
+        print("Please upgrade python to a version at least 3.6".format(args.configFile))
+        exit(1)
+
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c", 
