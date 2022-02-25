@@ -96,12 +96,6 @@ def create_workbook():
     ws = wb.active
     ws.title = 'Raw Input Data'
 
-    # df_columns = ["DB Name", "Node Type"]
-    # for metric in get_metrics():
-    #     df_columns.append(('%s' % metric))
-    # for metric in get_cmd_metrics():
-    #     df_columns.append(('%s' % metric))
-    # ws.append(df_columns)    
     return wb        
 
 
@@ -166,7 +160,7 @@ def process_node(config, node, is_master_shard, duration):
         config['tls']
     )
 
-    print("Processing node %s:%s".format(params[0], params[1]))
+    print("Processing node {}:{}".format(params[0], params[1]))
     result = {}
 
     # first run
@@ -333,18 +327,17 @@ def process_node(config, node, is_master_shard, duration):
     
     result['CurrItems'] = 0
     for x in range(10):
-        db = f"db{x}"
+        db = "db{}".format(x)
         if db in info2:
             # debug('num of keys %s' % info2[db]['keys'])
             result['CurrItems'] += info2[db]['keys']
 
-    print(result)
     return result
 
 
 def process_database(config, section, workbook, duration):
 
-    print(f"Connecting to {section} database ..")
+    print("Connecting to {} database ..".format(section))
 
     client = get_redis_client(
         config['host'], 
@@ -356,9 +349,9 @@ def process_database(config, section, workbook, duration):
 
     try:
         client.ping()
-        print(f"Connected to {section} database")
+        print("Connected to {} database".format(section))
     except BaseException:
-        print(f"Error connecting to {section} database")
+        print("Error connecting to {} database".format(section))
         return workbook
 
     info = client.execute_command('info')
@@ -383,7 +376,6 @@ def process_database(config, section, workbook, duration):
 
             if stats['connected'] is True:
                 node_stats = process_node(config, node, is_master_shard, duration)
-                print(ws.max_row)
                 if ws.max_row == 1:
                     ws.append(list(node_stats.keys()))    
                 ws.append(list(node_stats.values()))
@@ -420,24 +412,23 @@ def main():
         help = "Name of file results are written to. Defaults to OssStats.xlsx"
     )
     args = parser.parse_args()
-    print(args)
 
     if not os.path.isfile(args.configFile):
-        print(f"Can't find the specified {args.configFile} configuration file")
+        print("Can't find the specified {} configuration file".format(args.configFile))
         sys.exit(1)
     
     # Open and parse the configuration file.
     config = configparser.ConfigParser()
     config.read(args.configFile)
     
-    print(f"The output will be stored in {args.outputFile}")
+    print("The output will be stored in {}".format(args.outputFile))
 
     wb = create_workbook()
 
     for section in config.sections():
         wb = process_database(dict(config.items(section)), section, wb, args.duration)
 
-    print(f"Writing output file {args.outputFile}")
+    print("Writing output file {}".format(args.outputFile))
     wb.save(args.outputFile)
     print("Done!")
 
