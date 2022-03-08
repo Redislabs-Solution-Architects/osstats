@@ -173,6 +173,7 @@ def process_node(config, node, is_master_shard, duration):
 
     result['Source'] = 'oss'
     result['DB Name'] = params[0].replace('.', '-')
+    result['Redis Version'] = info2['redis_version']
     result['BytesUsedForCache'] = info2['used_memory_peak']
     result['Memory Limit (GB)'] = info2['used_memory_peak'] / 1024 ** 3
     result['CurrConnections'] = info2['connected_clients']
@@ -325,15 +326,18 @@ def process_node(config, node, is_master_shard, duration):
     )
     
     result['CurrItems'] = 0
+    result['Dbs BreakDown'] = ""
     for x in range(10):
         db = "db{}".format(x)
         if db in info2:
             # debug('num of keys %s' % info2[db]['keys'])
             result['CurrItems'] += info2[db]['keys']
+            result['Dbs BreakDown'] += (db +":" +info2[db]['keys'] + "\n")
 
     return result
 
 
+# Capture Version of Redis
 def process_database(config, section, workbook, duration):
 
     print("Connecting to {} database ..".format(section))
@@ -354,11 +358,7 @@ def process_database(config, section, workbook, duration):
         return workbook
 
     info = client.execute_command('info')
-    is_clustered = False
     if 'cluster_enabled' in info and info['cluster_enabled'] == 1:
-        is_clustered = True
-
-    if is_clustered is True:
         nodes = client.execute_command('cluster nodes')
     else:
         nodes = {
