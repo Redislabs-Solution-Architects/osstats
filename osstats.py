@@ -115,6 +115,7 @@ def get_redis_client(host, port, password, username, tls):
             host = host,
             port = port,
             socket_timeout = 10,
+            decode_responses=True,
             ssl = False if not tls else True
         )
     else:
@@ -124,6 +125,7 @@ def get_redis_client(host, port, password, username, tls):
                 port = port,
                 password = password,
                 socket_timeout = 10,
+                decode_responses=True,
                 ssl = False if not tls else True
             )   
         else:
@@ -133,6 +135,7 @@ def get_redis_client(host, port, password, username, tls):
                 username = username,
                 password = password,
                 socket_timeout = 10,
+                decode_responses=True,
                 ssl = False if not tls else True
             )
     return client
@@ -326,13 +329,15 @@ def process_node(config, node, is_master_shard, duration):
     )
     
     result['CurrItems'] = 0
-    result['Dbs BreakDown'] = ""
-    for x in range(10):
+    result['Namespaces'] = ""
+    for x in range(16):
         db = "db{}".format(x)
         if db in info2:
             # debug('num of keys %s' % info2[db]['keys'])
             result['CurrItems'] += info2[db]['keys']
-            result['Dbs BreakDown'] += (db +":" +info2[db]['keys'] + "\n")
+            if x > 0:
+                result['Namespaces'] += ", "    
+            result['Namespaces'] += f"{db}:{info2[db]['keys']}"
 
     return result
 
