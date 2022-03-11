@@ -422,7 +422,7 @@ def main():
         "--duration",
         type = int,
         help = "Period in minutes between gathering data from the endpoint",
-        default = 1
+        default = 5
     )
     parser.add_argument(
         "-o",
