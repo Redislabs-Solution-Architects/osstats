@@ -143,6 +143,10 @@ def get_redis_client(host, port, password, username, tls):
     return client
 
 async def sleep(duration):
+    await asyncio.sleep(duration)
+    
+async def progress(duration):
+    duration = duration * 60
     for i in trange(duration):
         await asyncio.sleep(1)
     
@@ -159,6 +163,7 @@ async def process_node(config, node, is_master_shard, duration):
             command stats output
     """
     params = node.split(':')
+    print("Processing node {}:{}".format(params[0], params[1]))
 
     client = get_redis_client(
         params[0], 
@@ -486,7 +491,7 @@ async def process_node(config, node, is_master_shard, duration):
 
 def process_database(config, section, workbook, duration):
 
-    print("Connecting to {} database ..".format(section))
+    print("Connecting to {} database ..".format(section), flush=True)
 
     client = get_redis_client(
         config['host'], 
@@ -517,8 +522,6 @@ def process_database(config, section, workbook, duration):
     loop = asyncio.get_event_loop()
     tasks = []
     for node, stats in nodes.items():
-        params = node.split(':')
-        print("Processing node {}:{}".format(params[0], params[1]))
         is_master_shard = False
         if stats['flags'].find('master') >= 0:
             is_master_shard = True
@@ -528,13 +531,21 @@ def process_database(config, section, workbook, duration):
                     process_node(config, node, is_master_shard, duration)
                 )
             )
+    tasks.append(
+        loop.create_task(
+            progress(duration)
+        )
+    )
     results = loop.run_until_complete(asyncio.wait(tasks))
+
+
 
     for result in results[0]:
         node_stats = result.result()
-        if ws.max_row == 1:
-            ws.append(list(node_stats.keys()))    
-        ws.append(list(node_stats.values()))
+        if node_stats is not None:
+            if ws.max_row == 1:
+                ws.append(list(node_stats.keys()))    
+            ws.append(list(node_stats.values()))
 
     loop.close()
     # End
@@ -591,9 +602,8 @@ def main():
 
     for section in config.sections():
         wb = process_database(dict(config.items(section)), section, wb, args.duration)
-        time.sleep(3)
 
-    print("\nWriting output file {}".format(args.outputFile))
+    print("\nWriting output file {}".format(args.outputFile), flush=True)
     wb.save(args.outputFile)
     print("Done!")
 
