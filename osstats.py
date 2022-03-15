@@ -166,7 +166,6 @@ async def process_node(config, node, is_master_shard, duration):
         config['tls']
     )
 
-    print("Processing node {}:{}".format(params[0], params[1]))
     result = {}
 
     # first run
@@ -516,6 +515,8 @@ def process_database(config, section, workbook, duration):
     loop = asyncio.get_event_loop()
     tasks = []
     for node, stats in nodes.items():
+        params = node.split(':')
+        print("Processing node {}:{}".format(params[0], params[1]))
         is_master_shard = False
         if stats['flags'].find('master') >= 0:
             is_master_shard = True
