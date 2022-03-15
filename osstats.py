@@ -491,7 +491,7 @@ async def process_node(config, node, is_master_shard, duration):
 
 def process_database(config, section, workbook, duration):
 
-    print("Connecting to {} database ..".format(section), flush=True)
+    print("\nConnecting to {} database ..".format(section), flush=True)
 
     client = get_redis_client(
         config['host'], 
@@ -503,9 +503,9 @@ def process_database(config, section, workbook, duration):
 
     try:
         client.ping()
-        print("Connected to {} database\n".format(section))
+        print("Connected to {} database".format(section))
     except BaseException:
-        print("Error connecting to {} database\n".format(section))
+        print("Error connecting to {} database".format(section))
         return workbook
 
     info = client.execute_command('info')
@@ -596,7 +596,7 @@ def main():
     config = configparser.ConfigParser()
     config.read(args.configFile)
     
-    print("The output will be stored in {}\n".format(args.outputFile))
+    print("The output will be stored in {}".format(args.outputFile))
 
     wb = create_workbook()
 
