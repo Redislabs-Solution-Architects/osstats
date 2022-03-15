@@ -8,7 +8,8 @@ import redis
 import openpyxl
 import asyncio
 import time
-from tqdm import trange
+from tqdm.asyncio import trange
+
 
 
 def get_value(value):
@@ -590,7 +591,7 @@ def main():
 
     for section in config.sections():
         wb = process_database(dict(config.items(section)), section, wb, args.duration)
-        time.sleep(1)
+        time.sleep(3)
 
     print("\nWriting output file {}".format(args.outputFile))
     wb.save(args.outputFile)
