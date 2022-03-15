@@ -6,8 +6,7 @@ import argparse
 import configparser
 import redis
 import openpyxl
-import concurrent.futures
-import time
+import asyncio
 
 
 def get_value(value):
@@ -140,8 +139,10 @@ def get_redis_client(host, port, password, username, tls):
             )
     return client
 
+async def sleep(duration):
+    await asyncio.sleep(duration)
 
-def process_node(config, node, is_master_shard, duration):
+async def process_node(config, node, is_master_shard, duration):
     """
         Get the current command stats of the passed node
         Args:
@@ -168,7 +169,7 @@ def process_node(config, node, is_master_shard, duration):
     # first run
     res1 = parse_response(client.execute_command('info commandstats'))
     info1 = client.execute_command('info')
-    time.sleep(duration * 60)
+    await sleep(duration * 60)
 
     # second run
     res2 = parse_response(client.execute_command('info commandstats'))
@@ -341,8 +342,6 @@ def process_node(config, node, is_master_shard, duration):
 
     return result
 
-
-# Capture Version of Redis
 def process_database(config, section, workbook, duration):
 
     print("Connecting to {} database ..".format(section))
@@ -372,17 +371,29 @@ def process_database(config, section, workbook, duration):
 
     ws = workbook.active
     
-    with concurrent.futures.ProcessPoolExecutor():
-        for node, stats in nodes.items():
-            is_master_shard = False
-            if stats['flags'].find('master') >= 0:
-                is_master_shard = True
+    # Process Redis nodes in parallel
+    loop = asyncio.get_event_loop()
+    tasks = []
+    for node, stats in nodes.items():
+        is_master_shard = False
+        if stats['flags'].find('master') >= 0:
+            is_master_shard = True
+        if stats['connected'] is True:
+            tasks.append(
+                loop.create_task(
+                    process_node(config, node, is_master_shard, duration)
+                )
+            )
+    results = loop.run_until_complete(asyncio.wait(tasks))
 
-            if stats['connected'] is True:
-                node_stats = process_node(config, node, is_master_shard, duration)
-                if ws.max_row == 1:
-                    ws.append(list(node_stats.keys()))    
-                ws.append(list(node_stats.values()))
+    for result in results[0]:
+        node_stats = result.result()
+        if ws.max_row == 1:
+            ws.append(list(node_stats.keys()))    
+        ws.append(list(node_stats.values()))
+
+    loop.close()
+    # End
     
     return workbook
 
