@@ -182,6 +182,8 @@ async def process_node(config, node, is_master_shard, duration):
     res2 = parse_response(client.execute_command('info commandstats'))
     info2 = client.execute_command('info')
 
+    duration_in_seconds = 60 * duration
+
     result['Source'] = 'oss'
     result['DB Name'] = params[0].replace('.', '-')
     result['Redis Version'] = info2['redis_version']
@@ -193,12 +195,11 @@ async def process_node(config, node, is_master_shard, duration):
     result['Node Type'] = 'Master' if is_master_shard else 'Replica'
     result['connected_slaves'] = info2['connected_slaves'] \
         if 'connected_slaves' in info2 else ''
-    result['duration'] = 60 * duration
-    result['TotalOps'] = info2['total_commands_processed'] - \
-        info1['total_commands_processed']
+    result['TotalOps'] = (info2['total_commands_processed'] - info1['total_commands_processed']) / duration_in_seconds
+
 
     # Bitmaps based commands
-    result['BitmapBasedCmds'] = get_command_by_args(
+    result['BitmapBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'bitcount',
@@ -208,10 +209,10 @@ async def process_node(config, node, is_master_shard, duration):
         'bitpos',
         'getbit',
         'setbit'
-    )
+    ) / duration_in_seconds)
 
     # String based commands
-    result['StringBasedCmds'] = get_command_by_args(
+    result['StringBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'append',
@@ -236,10 +237,10 @@ async def process_node(config, node, is_master_shard, duration):
         'setrange',
         'strlen',
         'substr'
-    )
+    ) / duration_in_seconds)
 
     # Geo based commands
-    result['GeoBasedCmds'] = get_command_by_args(
+    result['GeoBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'geoadd',
@@ -252,10 +253,10 @@ async def process_node(config, node, is_master_shard, duration):
         'georadius_ro',
         'geosearch',
         'geosearchstore'
-    )
+    ) / duration_in_seconds)
 
     # Hash based commands
-    result['HashBasedCmds'] = get_command_by_args(
+    result['HashBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'hdel',
@@ -274,10 +275,10 @@ async def process_node(config, node, is_master_shard, duration):
         'hsetnx',
         'hstrlen',
         'hvals'
-    )
+    ) / duration_in_seconds)
 
     # HyperLogLog based commands
-    result['HyperLogLogBasedCmds'] = get_command_by_args(
+    result['HyperLogLogBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'pfadd',
@@ -285,10 +286,10 @@ async def process_node(config, node, is_master_shard, duration):
         'pfdebug',
         'pfmerge',
         'pfselftest'
-    )
+    ) / duration_in_seconds)
 
     # Keys based commands
-    result['KeyBasedCmds'] = get_command_by_args(
+    result['KeyBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'copy',
@@ -319,10 +320,10 @@ async def process_node(config, node, is_master_shard, duration):
         'type',
         'unlink',
         'wait'
-    )
+    ) / duration_in_seconds)
 
     # List based commands
-    result['ListBasedCmds'] = get_command_by_args(
+    result['ListBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
         'blmove',
@@ -347,10 +348,10 @@ async def process_node(config, node, is_master_shard, duration):
         'rpoplpush',
         'rpush',
         'rpushx'    
-    )
+    ) / duration_in_seconds)
 
     # Sets based commands
-    result['SetBasedCmds'] = get_command_by_args(
+    result['SetBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'sadd',
@@ -370,10 +371,10 @@ async def process_node(config, node, is_master_shard, duration):
         'sscan',
         'sunion',
         'sunionstore'
-    )
+    ) / duration_in_seconds)
 
     # SortedSets based commands
-    result['SortedSetBasedCmds'] = get_command_by_args(
+    result['SortedSetBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'bzmpop',
@@ -411,10 +412,10 @@ async def process_node(config, node, is_master_shard, duration):
         'zscore',
         'zunion',
         'zunionstore'
-    )
+    ) / duration_in_seconds)
 
     # PubSub based commands
-    result['PubSubBasedCmds'] = get_command_by_args(
+    result['PubSubBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
         'psubscribe',
@@ -426,10 +427,10 @@ async def process_node(config, node, is_master_shard, duration):
         'subscribe',
         'sunsubscribe',
         'unsubscribe'
-    )
+    ) / duration_in_seconds)
 
     # Streams based commands
-    result['StreamBasedCmds'] = get_command_by_args(
+    result['StreamBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
         'xack',
@@ -447,10 +448,10 @@ async def process_node(config, node, is_master_shard, duration):
         'xrevrange',
         'xsetid',
         'xtrim'
-    )
+    ) / duration_in_seconds)
     
     # Scripting based commands
-    result['ScriptingBasedCmds'] = get_command_by_args(
+    result['ScriptingBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
         'eval',
@@ -461,10 +462,10 @@ async def process_node(config, node, is_master_shard, duration):
         'fcall_ro',
         'function',
         'script'
-    )
+    ) / duration_in_seconds)
     
     # Transactions based commands
-    result['TransactionBasedCmds'] = get_command_by_args(
+    result['TransactionBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
         'discard',
@@ -472,7 +473,7 @@ async def process_node(config, node, is_master_shard, duration):
         'multi',
         'unwatch',
         'watch'
-    )
+    ) / duration_in_seconds)
     
     result['CurrItems'] = 0
     result['Namespaces'] = ""
@@ -588,6 +589,10 @@ def main():
 
     if not os.path.isfile(args.configFile):
         print("Can't find the specified {} configuration file".format(args.configFile))
+        sys.exit(1)
+    
+    if args.duration < 1:
+        print("Invalid duration specified. Please specify a valid duration time in minutes".format(args.configFile))
         sys.exit(1)
     
     # Open and parse the configuration file.
