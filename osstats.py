@@ -178,11 +178,11 @@ async def process_node(config, node, is_master_shard, duration):
     result['Source'] = 'oss'
     result['DB Name'] = params[0].replace('.', '-')
     result['Redis Version'] = info2['redis_version']
+    result['OS'] = info2['os']
     result['BytesUsedForCache'] = info2['used_memory_peak']
-    result['Memory Limit (GB)'] = info2['used_memory_peak'] / 1024 ** 3
+    result['Memory Limit (GB)'] = round(info2['used_memory_peak'] / 1024 ** 3, 3)
     result['CurrConnections'] = info2['connected_clients']
     result['cluster_enabled'] = info2['cluster_enabled']
-
     result['Node Type'] = 'Master' if is_master_shard else 'Replica'
     result['connected_slaves'] = info2['connected_slaves'] \
         if 'connected_slaves' in info2 else ''
@@ -190,143 +190,281 @@ async def process_node(config, node, is_master_shard, duration):
     result['TotalOps'] = info2['total_commands_processed'] - \
         info1['total_commands_processed']
 
-    # String
+    # Bitmaps based commands
+    result['BitmapBasedCmds'] = get_command_by_args(
+        res1, 
+        res2, 
+        'bitcount',
+        'bitfield',
+        'bitfield_ro',
+        'bitop',
+        'bitpos',
+        'getbit',
+        'setbit'
+    )
+
+    # String based commands
     result['StringBasedCmds'] = get_command_by_args(
         res1, 
         res2, 
-        'get', 
-        'set', 
-        'incr', 
-        'decr', 
-        'incrby', 
-        'decrby'
+        'append',
+        'decr',
+        'decrby',
+        'get',
+        'getdel',
+        'getex',
+        'getrange',
+        'getset',
+        'incr',
+        'incrby',
+        'incrbyfloat',
+        'lcs',
+        'mget',
+        'mset',
+        'msetnx',
+        'psetex',
+        'set',
+        'setex',
+        'setnx',
+        'setrange',
+        'strlen',
+        'substr'
     )
 
-    # Hash
+    # Geo based commands
+    result['GeoBasedCmds'] = get_command_by_args(
+        res1, 
+        res2, 
+        'geoadd',
+        'geodist',
+        'geohash',
+        'geopos',
+        'georadius',
+        'georadiusbymember',
+        'georadiusbymember_ro',
+        'georadius_ro',
+        'geosearch',
+        'geosearchstore'
+    )
+
+    # Hash based commands
     result['HashBasedCmds'] = get_command_by_args(
         res1, 
         res2, 
-        'hget', 
-        'hset', 
-        'hgetall', 
-        'hmget', 
-        'hsetnx'
+        'hdel',
+        'hexists',
+        'hget',
+        'hgetall',
+        'hincrby',
+        'hincrbyfloat',
+        'hkeys',
+        'hlen',
+        'hmget',
+        'hmset',
+        'hrandfield',
+        'hscan',
+        'hset',
+        'hsetnx',
+        'hstrlen',
+        'hvals'
     )
 
-    # HyperLogLog
+    # HyperLogLog based commands
     result['HyperLogLogBasedCmds'] = get_command_by_args(
         res1, 
         res2, 
-        'pfadd', 
-        'pfcount', 
-        'pfmerge'
+        'pfadd',
+        'pfcount',
+        'pfdebug',
+        'pfmerge',
+        'pfselftest'
     )
 
-    # Keys
+    # Keys based commands
     result['KeyBasedCmds'] = get_command_by_args(
         res1, 
         res2, 
-        'del', 
-        'expire', 
-        'unlink'
+        'copy',
+        'del',
+        'dump',
+        'exists',
+        'expire',
+        'expireat',
+        'expiretime',
+        'keys',
+        'migrate',
+        'move',
+        'object',
+        'persist',
+        'pexpire',
+        'pexpireat',
+        'pexpiretime',
+        'pttl',
+        'randomkey',
+        'rename',
+        'renamenx',
+        'restore',
+        'scan',
+        'sort',
+        'sort_ro',
+        'touch',
+        'ttl',
+        'type',
+        'unlink',
+        'wait'
     )
 
-    # List
+    # List based commands
     result['ListBasedCmds'] = get_command_by_args(
         res1,
         res2,
+        'blmove',
+        'blmpop',
         'blpop',
         'brpop',
         'brpoplpush',
-        'blmove',
+        'lindex',
         'linsert',
         'llen',
+        'lmove',
+        'lmpop',
         'lpop',
+        'lpos',
         'lpush',
         'lpushx',
         'lrange',
-        'lset',
         'lrem',
+        'lset',
+        'ltrim',
         'rpop',
         'rpoplpush',
         'rpush',
-        'rpushx'
+        'rpushx'    
     )
 
-    # Sets
+    # Sets based commands
     result['SetBasedCmds'] = get_command_by_args(
         res1, 
         res2, 
-        'sadd', 
-        'scard', 
-        'sdiff', 
-        'sdiffstore', 
+        'sadd',
+        'scard',
+        'sdiff',
+        'sdiffstore',
         'sinter',
-        'sinterstore', 
-        'sismember', 
-        'smismember', 
-        'smembers', 
-        'smove', 
+        'sintercard',
+        'sinterstore',
+        'sismember',
+        'smembers',
+        'smismember',
+        'smove',
         'spop',
-        'srandmember', 
-        'srem', 
-        'sunion', 
-        'sunionstore', 
-        'sscan'
+        'srandmember',
+        'srem',
+        'sscan',
+        'sunion',
+        'sunionstore'
     )
 
-    # SortedSets
+    # SortedSets based commands
     result['SortedSetBasedCmds'] = get_command_by_args(
         res1, 
         res2, 
-        'bzpopmin', 
-        'bzpopmax', 
-        'zadd', 
-        'zcard', 
+        'bzmpop',
+        'bzpopmax',
+        'bzpopmin',
+        'zadd',
+        'zcard',
         'zcount',
-        'zdiff', 
-        'zdiffstore', 
-        'zincrby', 
-        'zinter', 
+        'zdiff',
+        'zdiffstore',
+        'zincrby',
+        'zinter',
+        'zintercard',
         'zinterstore',
-        'zlexcount', 
-        'zpopmax', 
-        'zpopmin', 
-        'zrange', 
+        'zlexcount',
+        'zmpop',
+        'zmscore',
+        'zpopmax',
+        'zpopmin',
+        'zrandmember',
+        'zrange',
         'zrangebylex',
-        'zrevrangebylex', 
-        'zrangebyscore', 
-        'zrank', 
+        'zrangebyscore',
+        'zrangestore',
+        'zrank',
         'zrem',
-        'zremrangebylex', 
-        'zremrangebyrank', 
+        'zremrangebylex',
+        'zremrangebyrank',
         'zremrangebyscore',
-        'zrevrange', 
-        'zrevrangebyscore', 
-        'zrevrank', 
-        'zscore', 
+        'zrevrange',
+        'zrevrangebylex',
+        'zrevrangebyscore',
+        'zrevrank',
+        'zscan',
+        'zscore',
         'zunion',
-        'zmscore', 
-        'zunionstore', 
-        'zscan'
+        'zunionstore'
     )
 
-    # Streams
+    # PubSub based commands
+    result['PubSubBasedCmds'] = get_command_by_args(
+        res1,
+        res2,
+        'psubscribe',
+        'publish',
+        'pubsub',
+        'punsubscribe',
+        'spublish',
+        'ssubscribe',
+        'subscribe',
+        'sunsubscribe',
+        'unsubscribe'
+    )
+
+    # Streams based commands
     result['StreamBasedCmds'] = get_command_by_args(
         res1,
         res2,
-        'xadd',
-        'xtrim',
-        'xdel',
-        'xrange',
-        'xrevrange',
-        'xlen',
-        'xread',
-        'xgroup',
-        'xreadgroup',
         'xack',
+        'xadd',
+        'xautoclaim',
         'xclaim',
-        'xpending'
+        'xdel',
+        'xgroup',
+        'xinfo',
+        'xlen',
+        'xpending',
+        'xrange',
+        'xread',
+        'xreadgroup',
+        'xrevrange',
+        'xsetid',
+        'xtrim'
+    )
+    
+    # Scripting based commands
+    result['ScriptingBasedCmds'] = get_command_by_args(
+        res1,
+        res2,
+        'eval',
+        'evalsha',
+        'evalsha_ro',
+        'eval_ro',
+        'fcall',
+        'fcall_ro',
+        'function',
+        'script'
+    )
+    
+    # Transactions based commands
+    result['TransactionBasedCmds'] = get_command_by_args(
+        res1,
+        res2,
+        'discard',
+        'exec',
+        'multi',
+        'unwatch',
+        'watch'
     )
     
     result['CurrItems'] = 0
