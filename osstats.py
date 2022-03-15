@@ -7,9 +7,7 @@ import configparser
 import redis
 import openpyxl
 import asyncio
-import time
 from tqdm.asyncio import trange
-
 
 
 def get_value(value):
@@ -491,7 +489,7 @@ async def process_node(config, node, is_master_shard, duration):
 
 def process_database(config, section, workbook, duration):
 
-    print("\nConnecting to {} database ..".format(section), flush=True)
+    print("\nConnecting to {} database ..".format(section))
 
     client = get_redis_client(
         config['host'], 
@@ -603,7 +601,7 @@ def main():
     for section in config.sections():
         wb = process_database(dict(config.items(section)), section, wb, args.duration)
 
-    print("\nWriting output file {}".format(args.outputFile), flush=True)
+    print("\nWriting output file {}".format(args.outputFile))
     wb.save(args.outputFile)
     print("Done!")
 
