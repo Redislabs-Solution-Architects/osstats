@@ -392,7 +392,7 @@ def process_database(config, section, workbook, duration):
             ws.append(list(node_stats.keys()))    
         ws.append(list(node_stats.values()))
 
-    loop.close
+    loop.close()
     # End
     
     return workbook
