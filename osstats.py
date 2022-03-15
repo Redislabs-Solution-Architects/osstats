@@ -7,6 +7,7 @@ import configparser
 import redis
 import openpyxl
 import asyncio
+import time
 from tqdm import trange
 
 
@@ -496,9 +497,9 @@ def process_database(config, section, workbook, duration):
 
     try:
         client.ping()
-        print("Connected to {} database".format(section))
+        print("Connected to {} database\n".format(section))
     except BaseException:
-        print("Error connecting to {} database".format(section))
+        print("Error connecting to {} database\n".format(section))
         return workbook
 
     info = client.execute_command('info')
@@ -583,14 +584,15 @@ def main():
     config = configparser.ConfigParser()
     config.read(args.configFile)
     
-    print("The output will be stored in {}".format(args.outputFile))
+    print("The output will be stored in {}\n".format(args.outputFile))
 
     wb = create_workbook()
 
     for section in config.sections():
         wb = process_database(dict(config.items(section)), section, wb, args.duration)
+        time.sleep(1)
 
-    print("Writing output file {}".format(args.outputFile))
+    print("\nWriting output file {}".format(args.outputFile))
     wb.save(args.outputFile)
     print("Done!")
 
