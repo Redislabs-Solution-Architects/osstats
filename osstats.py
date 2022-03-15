@@ -7,6 +7,7 @@ import configparser
 import redis
 import openpyxl
 import asyncio
+from tqdm import trange
 
 
 def get_value(value):
@@ -140,7 +141,9 @@ def get_redis_client(host, port, password, username, tls):
     return client
 
 async def sleep(duration):
-    await asyncio.sleep(duration)
+    for i in trange(duration):
+        await asyncio.sleep(1)
+    
 
 async def process_node(config, node, is_master_shard, duration):
     """
