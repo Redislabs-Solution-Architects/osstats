@@ -7,6 +7,7 @@ import configparser
 import redis
 import openpyxl
 import asyncio
+from tqdm.asyncio import trange
 
 
 def get_value(value):
@@ -141,6 +142,12 @@ def get_redis_client(host, port, password, username, tls):
 
 async def sleep(duration):
     await asyncio.sleep(duration)
+    
+async def progress(duration):
+    duration = duration * 60
+    for i in trange(duration):
+        await asyncio.sleep(1)
+    
 
 async def process_node(config, node, is_master_shard, duration):
     """
@@ -154,6 +161,7 @@ async def process_node(config, node, is_master_shard, duration):
             command stats output
     """
     params = node.split(':')
+    print("Processing node {}:{}".format(params[0], params[1]))
 
     client = get_redis_client(
         params[0], 
@@ -163,7 +171,6 @@ async def process_node(config, node, is_master_shard, duration):
         config['tls']
     )
 
-    print("Processing node {}:{}".format(params[0], params[1]))
     result = {}
 
     # first run
@@ -175,159 +182,298 @@ async def process_node(config, node, is_master_shard, duration):
     res2 = parse_response(client.execute_command('info commandstats'))
     info2 = client.execute_command('info')
 
+    duration_in_seconds = 60 * duration
+
     result['Source'] = 'oss'
     result['DB Name'] = params[0].replace('.', '-')
     result['Redis Version'] = info2['redis_version']
+    result['OS'] = info2['os']
     result['BytesUsedForCache'] = info2['used_memory_peak']
-    result['Memory Limit (GB)'] = info2['used_memory_peak'] / 1024 ** 3
+    result['Memory Limit (GB)'] = round(info2['used_memory_peak'] / 1024 ** 3, 3)
     result['CurrConnections'] = info2['connected_clients']
     result['cluster_enabled'] = info2['cluster_enabled']
-
     result['Node Type'] = 'Master' if is_master_shard else 'Replica'
     result['connected_slaves'] = info2['connected_slaves'] \
         if 'connected_slaves' in info2 else ''
-    result['duration'] = 60 * duration
-    result['TotalOps'] = info2['total_commands_processed'] - \
-        info1['total_commands_processed']
+    result['TotalOps'] = (info2['total_commands_processed'] - info1['total_commands_processed']) / duration_in_seconds
 
-    # String
-    result['StringBasedCmds'] = get_command_by_args(
+
+    # Bitmaps based commands
+    result['BitmapBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
-        'get', 
-        'set', 
-        'incr', 
-        'decr', 
-        'incrby', 
-        'decrby'
-    )
+        'bitcount',
+        'bitfield',
+        'bitfield_ro',
+        'bitop',
+        'bitpos',
+        'getbit',
+        'setbit'
+    ) / duration_in_seconds)
 
-    # Hash
-    result['HashBasedCmds'] = get_command_by_args(
+    # String based commands
+    result['StringBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
-        'hget', 
-        'hset', 
-        'hgetall', 
-        'hmget', 
-        'hsetnx'
-    )
+        'append',
+        'decr',
+        'decrby',
+        'get',
+        'getdel',
+        'getex',
+        'getrange',
+        'getset',
+        'incr',
+        'incrby',
+        'incrbyfloat',
+        'lcs',
+        'mget',
+        'mset',
+        'msetnx',
+        'psetex',
+        'set',
+        'setex',
+        'setnx',
+        'setrange',
+        'strlen',
+        'substr'
+    ) / duration_in_seconds)
 
-    # HyperLogLog
-    result['HyperLogLogBasedCmds'] = get_command_by_args(
+    # Geo based commands
+    result['GeoBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
-        'pfadd', 
-        'pfcount', 
-        'pfmerge'
-    )
+        'geoadd',
+        'geodist',
+        'geohash',
+        'geopos',
+        'georadius',
+        'georadiusbymember',
+        'georadiusbymember_ro',
+        'georadius_ro',
+        'geosearch',
+        'geosearchstore'
+    ) / duration_in_seconds)
 
-    # Keys
-    result['KeyBasedCmds'] = get_command_by_args(
+    # Hash based commands
+    result['HashBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
-        'del', 
-        'expire', 
-        'unlink'
-    )
+        'hdel',
+        'hexists',
+        'hget',
+        'hgetall',
+        'hincrby',
+        'hincrbyfloat',
+        'hkeys',
+        'hlen',
+        'hmget',
+        'hmset',
+        'hrandfield',
+        'hscan',
+        'hset',
+        'hsetnx',
+        'hstrlen',
+        'hvals'
+    ) / duration_in_seconds)
 
-    # List
-    result['ListBasedCmds'] = get_command_by_args(
+    # HyperLogLog based commands
+    result['HyperLogLogBasedCmds'] = round(get_command_by_args(
+        res1, 
+        res2, 
+        'pfadd',
+        'pfcount',
+        'pfdebug',
+        'pfmerge',
+        'pfselftest'
+    ) / duration_in_seconds)
+
+    # Keys based commands
+    result['KeyBasedCmds'] = round(get_command_by_args(
+        res1, 
+        res2, 
+        'copy',
+        'del',
+        'dump',
+        'exists',
+        'expire',
+        'expireat',
+        'expiretime',
+        'keys',
+        'migrate',
+        'move',
+        'object',
+        'persist',
+        'pexpire',
+        'pexpireat',
+        'pexpiretime',
+        'pttl',
+        'randomkey',
+        'rename',
+        'renamenx',
+        'restore',
+        'scan',
+        'sort',
+        'sort_ro',
+        'touch',
+        'ttl',
+        'type',
+        'unlink',
+        'wait'
+    ) / duration_in_seconds)
+
+    # List based commands
+    result['ListBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
+        'blmove',
+        'blmpop',
         'blpop',
         'brpop',
         'brpoplpush',
-        'blmove',
+        'lindex',
         'linsert',
         'llen',
+        'lmove',
+        'lmpop',
         'lpop',
+        'lpos',
         'lpush',
         'lpushx',
         'lrange',
-        'lset',
         'lrem',
+        'lset',
+        'ltrim',
         'rpop',
         'rpoplpush',
         'rpush',
-        'rpushx'
-    )
+        'rpushx'    
+    ) / duration_in_seconds)
 
-    # Sets
-    result['SetBasedCmds'] = get_command_by_args(
+    # Sets based commands
+    result['SetBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
-        'sadd', 
-        'scard', 
-        'sdiff', 
-        'sdiffstore', 
+        'sadd',
+        'scard',
+        'sdiff',
+        'sdiffstore',
         'sinter',
-        'sinterstore', 
-        'sismember', 
-        'smismember', 
-        'smembers', 
-        'smove', 
+        'sintercard',
+        'sinterstore',
+        'sismember',
+        'smembers',
+        'smismember',
+        'smove',
         'spop',
-        'srandmember', 
-        'srem', 
-        'sunion', 
-        'sunionstore', 
-        'sscan'
-    )
+        'srandmember',
+        'srem',
+        'sscan',
+        'sunion',
+        'sunionstore'
+    ) / duration_in_seconds)
 
-    # SortedSets
-    result['SortedSetBasedCmds'] = get_command_by_args(
+    # SortedSets based commands
+    result['SortedSetBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
-        'bzpopmin', 
-        'bzpopmax', 
-        'zadd', 
-        'zcard', 
+        'bzmpop',
+        'bzpopmax',
+        'bzpopmin',
+        'zadd',
+        'zcard',
         'zcount',
-        'zdiff', 
-        'zdiffstore', 
-        'zincrby', 
-        'zinter', 
+        'zdiff',
+        'zdiffstore',
+        'zincrby',
+        'zinter',
+        'zintercard',
         'zinterstore',
-        'zlexcount', 
-        'zpopmax', 
-        'zpopmin', 
-        'zrange', 
+        'zlexcount',
+        'zmpop',
+        'zmscore',
+        'zpopmax',
+        'zpopmin',
+        'zrandmember',
+        'zrange',
         'zrangebylex',
-        'zrevrangebylex', 
-        'zrangebyscore', 
-        'zrank', 
+        'zrangebyscore',
+        'zrangestore',
+        'zrank',
         'zrem',
-        'zremrangebylex', 
-        'zremrangebyrank', 
+        'zremrangebylex',
+        'zremrangebyrank',
         'zremrangebyscore',
-        'zrevrange', 
-        'zrevrangebyscore', 
-        'zrevrank', 
-        'zscore', 
+        'zrevrange',
+        'zrevrangebylex',
+        'zrevrangebyscore',
+        'zrevrank',
+        'zscan',
+        'zscore',
         'zunion',
-        'zmscore', 
-        'zunionstore', 
-        'zscan'
-    )
+        'zunionstore'
+    ) / duration_in_seconds)
 
-    # Streams
-    result['StreamBasedCmds'] = get_command_by_args(
+    # PubSub based commands
+    result['PubSubBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
-        'xadd',
-        'xtrim',
-        'xdel',
-        'xrange',
-        'xrevrange',
-        'xlen',
-        'xread',
-        'xgroup',
-        'xreadgroup',
+        'psubscribe',
+        'publish',
+        'pubsub',
+        'punsubscribe',
+        'spublish',
+        'ssubscribe',
+        'subscribe',
+        'sunsubscribe',
+        'unsubscribe'
+    ) / duration_in_seconds)
+
+    # Streams based commands
+    result['StreamBasedCmds'] = round(get_command_by_args(
+        res1,
+        res2,
         'xack',
+        'xadd',
+        'xautoclaim',
         'xclaim',
-        'xpending'
-    )
+        'xdel',
+        'xgroup',
+        'xinfo',
+        'xlen',
+        'xpending',
+        'xrange',
+        'xread',
+        'xreadgroup',
+        'xrevrange',
+        'xsetid',
+        'xtrim'
+    ) / duration_in_seconds)
+    
+    # Scripting based commands
+    result['ScriptingBasedCmds'] = round(get_command_by_args(
+        res1,
+        res2,
+        'eval',
+        'evalsha',
+        'evalsha_ro',
+        'eval_ro',
+        'fcall',
+        'fcall_ro',
+        'function',
+        'script'
+    ) / duration_in_seconds)
+    
+    # Transactions based commands
+    result['TransactionBasedCmds'] = round(get_command_by_args(
+        res1,
+        res2,
+        'discard',
+        'exec',
+        'multi',
+        'unwatch',
+        'watch'
+    ) / duration_in_seconds)
     
     result['CurrItems'] = 0
     result['Namespaces'] = ""
@@ -344,7 +490,7 @@ async def process_node(config, node, is_master_shard, duration):
 
 def process_database(config, section, workbook, duration):
 
-    print("Connecting to {} database ..".format(section))
+    print("\nConnecting to {} database ..".format(section))
 
     client = get_redis_client(
         config['host'], 
@@ -384,13 +530,21 @@ def process_database(config, section, workbook, duration):
                     process_node(config, node, is_master_shard, duration)
                 )
             )
+    tasks.append(
+        loop.create_task(
+            progress(duration)
+        )
+    )
     results = loop.run_until_complete(asyncio.wait(tasks))
+
+
 
     for result in results[0]:
         node_stats = result.result()
-        if ws.max_row == 1:
-            ws.append(list(node_stats.keys()))    
-        ws.append(list(node_stats.values()))
+        if node_stats is not None:
+            if ws.max_row == 1:
+                ws.append(list(node_stats.keys()))    
+            ws.append(list(node_stats.values()))
 
     loop.close()
     # End
@@ -437,6 +591,10 @@ def main():
         print("Can't find the specified {} configuration file".format(args.configFile))
         sys.exit(1)
     
+    if args.duration < 1:
+        print("Invalid duration specified. Please specify a valid duration time in minutes".format(args.configFile))
+        sys.exit(1)
+    
     # Open and parse the configuration file.
     config = configparser.ConfigParser()
     config.read(args.configFile)
@@ -448,7 +606,7 @@ def main():
     for section in config.sections():
         wb = process_database(dict(config.items(section)), section, wb, args.duration)
 
-    print("Writing output file {}".format(args.outputFile))
+    print("\nWriting output file {}".format(args.outputFile))
     wb.save(args.outputFile)
     print("Done!")
 
