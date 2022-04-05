@@ -495,7 +495,12 @@ async def process_node(config, node, is_master_shard, duration):
 
     return result
 
-def process_database(config, section, workbook, duration):
+async def run_tasks(tasks):
+    res = await asyncio.gather(*tasks)
+    return res
+
+
+def process_database(config, section, workbook, duration,loop):
 
     print("\nConnecting to {} database ..".format(section))
 
@@ -525,7 +530,7 @@ def process_database(config, section, workbook, duration):
     ws = workbook.active
     
     # Process Redis nodes in parallel
-    loop = asyncio.get_event_loop()
+   
     tasks = []
     for node, stats in nodes.items():
         is_master_shard = False
@@ -542,18 +547,16 @@ def process_database(config, section, workbook, duration):
             progress(duration)
         )
     )
-    results = loop.run_until_complete(asyncio.wait(tasks))
+    results = loop.run_until_complete(run_tasks(tasks))
 
-
-
-    for result in results[0]:
-        node_stats = result.result()
+    for result in results:
+        node_stats = result
         if node_stats is not None:
             if ws.max_row == 1:
                 ws.append(list(node_stats.keys()))    
             ws.append(list(node_stats.values()))
 
-    loop.close()
+   
     # End
     
     return workbook
@@ -604,10 +607,10 @@ def main():
     print("The output will be stored in {}".format(args.outputFile))
 
     wb = create_workbook()
-
+    loop = asyncio.get_event_loop()
     for section in config.sections():
-        wb = process_database(dict(config.items(section)), section, wb, args.duration)
-
+        wb = process_database(dict(config.items(section)), section, wb, 1,loop)
+    loop.close()
     print("\nWriting output file {}".format(args.outputFile))
     wb.save(args.outputFile)
     print("Done!")
