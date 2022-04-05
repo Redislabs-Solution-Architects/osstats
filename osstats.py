@@ -198,6 +198,16 @@ async def process_node(config, node, is_master_shard, duration):
     result['TotalOps'] = (info2['total_commands_processed'] - info1['total_commands_processed']) / duration_in_seconds
 
 
+
+# Actions
+# -------
+# 1. Rename OSS GeoBasedCmds to GeoSpatialBasedCmds
+# 2. Add OSS ClusterBasedCmds
+# 3. EC is not providing BitmapBasedCmds
+# 4. Combine OSS ScriptingBasedCmds, TransactionBasedCmds to EvalBasedCmds
+# 5. Implement EC ClusterBasedCmds, EvalBasedCmds, GeoSpatialBasedCmds, PubSubBasedCmds
+# 6. Implement OSS GetTypeCmds, SetTypeCmds
+
     # Bitmaps based commands
     result['BitmapBasedCmds'] = round(get_command_by_args(
         res1, 
@@ -212,35 +222,29 @@ async def process_node(config, node, is_master_shard, duration):
     ) / duration_in_seconds)
 
     # String based commands
-    result['StringBasedCmds'] = round(get_command_by_args(
+    result['ClusterBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
-        'append',
-        'decr',
-        'decrby',
-        'get',
-        'getdel',
-        'getex',
-        'getrange',
-        'getset',
-        'incr',
-        'incrby',
-        'incrbyfloat',
-        'lcs',
-        'mget',
-        'mset',
-        'msetnx',
-        'psetex',
-        'set',
-        'setex',
-        'setnx',
-        'setrange',
-        'strlen',
-        'substr'
+        'asking',
+        'cluster'
     ) / duration_in_seconds)
 
-    # Geo based commands
-    result['GeoBasedCmds'] = round(get_command_by_args(
+    # Eval based commands
+    result['EvalBasedCmds'] = round(get_command_by_args(
+        res1,
+        res2,
+        'eval',
+        'evalsha',
+        'evalsha_ro',
+        'eval_ro',
+        'fcall',
+        'fcall_ro',
+        'function',
+        'script'
+    ) / duration_in_seconds)
+
+    # GeoSpatial based commands
+    result['GeoSpatialBasedCmds'] = round(get_command_by_args(
         res1, 
         res2, 
         'geoadd',
@@ -350,6 +354,21 @@ async def process_node(config, node, is_master_shard, duration):
         'rpushx'    
     ) / duration_in_seconds)
 
+    # PubSub based commands
+    result['PubSubBasedCmds'] = round(get_command_by_args(
+        res1,
+        res2,
+        'psubscribe',
+        'publish',
+        'pubsub',
+        'punsubscribe',
+        'spublish',
+        'ssubscribe',
+        'subscribe',
+        'sunsubscribe',
+        'unsubscribe'
+    ) / duration_in_seconds)
+
     # Sets based commands
     result['SetBasedCmds'] = round(get_command_by_args(
         res1, 
@@ -414,22 +433,35 @@ async def process_node(config, node, is_master_shard, duration):
         'zunionstore'
     ) / duration_in_seconds)
 
-    # PubSub based commands
-    result['PubSubBasedCmds'] = round(get_command_by_args(
-        res1,
-        res2,
-        'psubscribe',
-        'publish',
-        'pubsub',
-        'punsubscribe',
-        'spublish',
-        'ssubscribe',
-        'subscribe',
-        'sunsubscribe',
-        'unsubscribe'
+    # String based commands
+    result['StringBasedCmds'] = round(get_command_by_args(
+        res1, 
+        res2, 
+        'append',
+        'decr',
+        'decrby',
+        'get',
+        'getdel',
+        'getex',
+        'getrange',
+        'getset',
+        'incr',
+        'incrby',
+        'incrbyfloat',
+        'lcs',
+        'mget',
+        'mset',
+        'msetnx',
+        'psetex',
+        'set',
+        'setex',
+        'setnx',
+        'setrange',
+        'strlen',
+        'substr'
     ) / duration_in_seconds)
 
-    # Streams based commands
+    # Stream based commands
     result['StreamBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
@@ -450,21 +482,7 @@ async def process_node(config, node, is_master_shard, duration):
         'xtrim'
     ) / duration_in_seconds)
     
-    # Scripting based commands
-    result['ScriptingBasedCmds'] = round(get_command_by_args(
-        res1,
-        res2,
-        'eval',
-        'evalsha',
-        'evalsha_ro',
-        'eval_ro',
-        'fcall',
-        'fcall_ro',
-        'function',
-        'script'
-    ) / duration_in_seconds)
-    
-    # Transactions based commands
+    # Transaction based commands
     result['TransactionBasedCmds'] = round(get_command_by_args(
         res1,
         res2,
@@ -554,9 +572,8 @@ def process_database(config, section, workbook, duration):
 
 def main():
     if not sys.version_info >= (3, 6):
-        print("Please upgrade python to a version at least 3.6".format(args.configFile))
-        exit(1)
-
+        print("Please upgrade python to a version at least 3.6")
+        sys.exit(1)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -567,10 +584,6 @@ def main():
         help="The filename for configuration file. By default the script will try to open the config.ini file.", 
         metavar="FILE"
     )    
-    # parser.add_argument(
-    #     "inputFile",
-    #     help = "The Excel file containing Redis endpoints to pull stats from"
-    # )
     parser.add_argument(
         "-d",
         "--duration",
