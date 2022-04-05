@@ -197,17 +197,6 @@ async def process_node(config, node, is_master_shard, duration):
         if 'connected_slaves' in info2 else ''
     result['TotalOps'] = (info2['total_commands_processed'] - info1['total_commands_processed']) / duration_in_seconds
 
-
-
-# Actions
-# -------
-# 1. Rename OSS GeoBasedCmds to GeoSpatialBasedCmds
-# 2. Add OSS ClusterBasedCmds
-# 3. EC is not providing BitmapBasedCmds
-# 4. Combine OSS ScriptingBasedCmds, TransactionBasedCmds to EvalBasedCmds
-# 5. Implement EC ClusterBasedCmds, EvalBasedCmds, GeoSpatialBasedCmds, PubSubBasedCmds
-# 6. Implement OSS GetTypeCmds, SetTypeCmds
-
     # Bitmaps based commands
     result['BitmapBasedCmds'] = round(get_command_by_args(
         res1, 
