@@ -4,3 +4,4 @@ packaging==21.3
 pyparsing==3.0.7
 redis==4.1.4
 wrapt==1.13.3
+tqdm
