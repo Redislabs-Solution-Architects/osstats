@@ -14,8 +14,8 @@ echo "Host      : $HOST"
 echo "Port      : $PORT"
 echo ""
 echo "Counting nb of increments:"
-echo "-----------------------"
-for (( c=1; c<=12000000; c++ ))
+echo "--------------------------"
+for (( c=1; c<=1000000; c++ ))
 do
     redis-cli -h $HOST -p $PORT -c SETBIT bit$c $c 1 > /dev/null
     redis-cli -h $HOST -p $PORT -c GETBIT bit$c $c > /dev/null
@@ -39,7 +39,11 @@ do
     redis-cli -h $HOST -p $PORT -c GET string$c > /dev/null
     redis-cli -h $HOST -p $PORT -c XLEN mystream$c > /dev/null
     redis-cli -h $HOST -p $PORT -c UNWATCH  > /dev/null
-   echo "iteration $c"
-   echo "-----"
-   sleep 0.0001
+
+    echo -ne "Iteration: $c"\\r    
+    sleep 0.0001
 done
+
+echo ""
+echo "--------------------------"
+echo "Done!"
