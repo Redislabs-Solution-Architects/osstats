@@ -609,7 +609,7 @@ def main():
     wb = create_workbook()
     loop = asyncio.get_event_loop()
     for section in config.sections():
-        wb = process_database(dict(config.items(section)), section, wb, 1,loop)
+        wb = process_database(dict(config.items(section)), section, wb, args.duration,loop)
     loop.close()
     print("\nWriting output file {}".format(args.outputFile))
     wb.save(args.outputFile)
