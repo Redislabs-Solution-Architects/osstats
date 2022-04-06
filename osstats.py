@@ -59,32 +59,6 @@ def parse_response(response):
     return res
 
 
-def get_cmd_metrics():
-    metrics = [
-        'HashBasedCmds',
-        'HyperLogLogBasedCmds',
-        'KeyBasedCmds',
-        'ListBasedCmds',
-        'SetBasedCmds',
-        'SortedSetBasedCmds',
-        'StringBasedCmds',
-        'StreamBasedCmds',
-        'TotalOps']
-    return metrics
-
-
-def get_metrics():
-    metrics = [
-        'CurrItems',
-        'BytesUsedForCache',
-        'CurrConnections',
-        'cluster_enabled',
-        'connected_slaves',
-        'duration',
-        'Memory Limit (GB)']
-    return metrics
-
-
 def create_workbook():
     """Create an empty workbook with headers
     Args:
@@ -140,14 +114,16 @@ def get_redis_client(host, port, password, username, tls):
             )
     return client
 
+
 async def sleep(duration):
     await asyncio.sleep(duration)
-    
+
+
 async def progress(duration):
     duration = duration * 60
     for i in trange(duration):
         await asyncio.sleep(1)
-    
+
 
 async def process_node(config, node, is_master_shard, duration):
     """
@@ -494,6 +470,7 @@ async def process_node(config, node, is_master_shard, duration):
             result['Namespaces'] += f"{db}:{info2[db]['keys']}"
 
     return result
+
 
 async def run_tasks(tasks):
     res = await asyncio.gather(*tasks)
