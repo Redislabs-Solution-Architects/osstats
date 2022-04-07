@@ -67,7 +67,7 @@ def create_workbook():
     """
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = 'Raw Input Data'
+    ws.title = 'ClusterData'
 
     return wb        
 
@@ -125,7 +125,7 @@ async def progress(duration):
         await asyncio.sleep(1)
 
 
-async def process_node(config, node, is_master_shard, duration):
+async def process_node(section, config, node, is_master_shard, duration):
     """
         Get the current command stats of the passed node
         Args:
@@ -160,18 +160,18 @@ async def process_node(config, node, is_master_shard, duration):
 
     duration_in_seconds = 60 * duration
 
-    result['Source'] = 'oss'
-    result['DB Name'] = params[0].replace('.', '-')
-    result['Redis Version'] = info2['redis_version']
+    result['Source'] = 'OSS'
+    result['ClusterId'] = section
+    result['NodeId'] = params[0].replace('.', '-')
+    result['NodeRole'] = 'Master' if is_master_shard else 'Replica'
+    result['RedisVersion'] = info2['redis_version']
     result['OS'] = info2['os']
     result['BytesUsedForCache'] = info2['used_memory_peak']
-    result['Memory Limit (GB)'] = round(info2['used_memory_peak'] / 1024 ** 3, 3)
     result['CurrConnections'] = info2['connected_clients']
-    result['cluster_enabled'] = info2['cluster_enabled']
-    result['Node Type'] = 'Master' if is_master_shard else 'Replica'
-    result['connected_slaves'] = info2['connected_slaves'] \
-        if 'connected_slaves' in info2 else ''
-    result['TotalOps'] = (info2['total_commands_processed'] - info1['total_commands_processed']) / duration_in_seconds
+    result['ClusterEnabled'] = info2['cluster_enabled']
+    result['ConnectedSlaves'] = info2['connected_slaves'] if 'connected_slaves' in info2 else ''
+    result['MemoryUsed (Gb)'] = round(info2['used_memory_peak'] / 1024 ** 3, 3)
+    result['Throughput (Ops)'] = round((info2['total_commands_processed'] - info1['total_commands_processed']) / duration_in_seconds)
 
     # Get type commands
     result['GetTypeCmds'] = round(get_command_by_args(
@@ -748,7 +748,7 @@ def process_database(config, section, workbook, duration,loop):
         if stats['connected'] is True:
             tasks.append(
                 loop.create_task(
-                    process_node(config, node, is_master_shard, duration)
+                    process_node(section, config, node, is_master_shard, duration)
                 )
             )
     tasks.append(
@@ -796,8 +796,8 @@ def main():
         "-o",
         "--output-file",
         dest="outputFile",
-        default="OssStats.xlsx",
-        help = "Name of file results are written to. Defaults to OssStats.xlsx"
+        default="OSStats.xlsx",
+        help = "Name of file results are written to. Defaults to OSStats.xlsx"
     )
     args = parser.parse_args()
 
