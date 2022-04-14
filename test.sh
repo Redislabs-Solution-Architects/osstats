@@ -17,28 +17,30 @@ echo "Counting nb of increments:"
 echo "--------------------------"
 for (( c=1; c<=1000000; c++ ))
 do
-    redis-cli -h $HOST -p $PORT -c SETBIT bit$c $c 1 > /dev/null
-    redis-cli -h $HOST -p $PORT -c GETBIT bit$c $c > /dev/null
-    redis-cli -h $HOST -p $PORT -c EVAL "return ARGV[1]" 0 $c > /dev/null
-    redis-cli -h $HOST -p $PORT -c GEOADD Sicily 13.361389 38.115556 Palermo 15.087269 37.502669 Catania > /dev/null
-    redis-cli -h $HOST -p $PORT -c GEORADIUS Sicily 15 37 100 km > /dev/null
-    redis-cli -h $HOST -p $PORT -c HSET hash$c number $c > /dev/null
-    redis-cli -h $HOST -p $PORT -c HGET hash$c number > /dev/null
-    redis-cli -h $HOST -p $PORT -c PFADD hyperloglog$c a b c d e f g > /dev/null
-    redis-cli -h $HOST -p $PORT -c PFCOUNT hyperloglog$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c EXISTS string$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c EXISTS nostring$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c lpush list$c $c > /dev/null
-    redis-cli -h $HOST -p $PORT -c rpop list$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c PUBLISH channel message$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c SADD set$c item$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c SMEMBERS set$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c ZADD zset$c $c item > /dev/null
-    redis-cli -h $HOST -p $PORT -c ZRANGE  zset$c 0 -1 WITHSCORES > /dev/null
-    redis-cli -h $HOST -p $PORT -c SET string$c $c > /dev/null
-    redis-cli -h $HOST -p $PORT -c GET string$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c XLEN mystream$c > /dev/null
-    redis-cli -h $HOST -p $PORT -c UNWATCH  > /dev/null
+    cat << EOF | redis-cli -h $HOST -p $PORT > /dev/null
+SETBIT bit$c $c 1
+GETBIT bit$c $c
+EVAL "return ARGV[1]" 0 $c
+GEOADD Sicily 13.361389 38.115556 Palermo 15.087269 37.502669 Catania
+GEORADIUS Sicily 15 37 100 km
+HSET hash$c number $c
+HGET hash$c number
+PFADD hyperloglog$c a b c d e f g
+PFCOUNT hyperloglog$c
+EXISTS string$c
+EXISTS nostring$c
+lpush list$c $c
+rpop list$c
+PUBLISH channel message$c
+SADD set$c item$c
+SMEMBERS set$c
+ZADD zset$c $c item
+ZRANGE  zset$c 0 -1 WITHSCORES
+SET string$c $c
+GET string$c
+XLEN mystream$c
+UNWATCH
+EOF
 
     echo -ne "Iteration: $c"\\r    
     sleep 0.0001
