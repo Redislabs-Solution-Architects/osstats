@@ -134,3 +134,4 @@ config.ini
 
 # Excel files
 *.xlsx
+*.csv
