@@ -166,6 +166,7 @@ async def process_node(section, config, node, is_master_shard, duration):
     result['NodeRole'] = 'Master' if is_master_shard else 'Replica'
     result['RedisVersion'] = info2['redis_version']
     result['OS'] = info2['os']
+    result['TotalSystemMemory'] = round(info2['total_system_memory'] / 1024 ** 3, 3)
     result['BytesUsedForCache'] = info2['used_memory_peak']
     result['CurrConnections'] = info2['connected_clients']
     result['ClusterEnabled'] = info2['cluster_enabled']
