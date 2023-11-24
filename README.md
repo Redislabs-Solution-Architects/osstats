@@ -42,6 +42,7 @@ For any clustered Redis database it is important to mention that only a single n
 ```
 
 Execute the script. Use the -d option to change the duration in minutes the script will wait for running the second set of INFO and INFO COMMANDSTATS commands. By default this flag is set to 5 minutes.
+Use the -po option to print the results in console (when this option is activated the output file will not be created).
 
 By default, the output will be stored in OSStats.xlsx. Use -c option to change the name of output file.
 
