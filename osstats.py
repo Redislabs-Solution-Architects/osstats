@@ -772,6 +772,16 @@ def process_database(config, section, workbook, duration,loop):
     return workbook
 
 
+def print_results(wb):
+    sheet = wb.active
+    print("\n--------------------")
+    for row_num in range(2, sheet.max_row + 1):
+        for col_idx, col in enumerate(sheet.iter_cols(min_row=1, max_row=1)):
+            header_value = col[0].value
+            cell_value = sheet.cell(row=row_num, column=col_idx + 1).value
+            print(f"{header_value}: {cell_value}")
+        print("--------------------\n")
+
 def main():
     if not sys.version_info >= (3, 6):
         print("Please upgrade python to a version at least 3.6")
@@ -800,6 +810,13 @@ def main():
         default="OSStats.xlsx",
         help = "Name of file results are written to. Defaults to OSStats.xlsx"
     )
+    parser.add_argument(
+        "-po",
+        "--print-only",
+        dest="printOnly",
+        action="store_true",
+        help = "Print results only in console"
+    )
     args = parser.parse_args()
 
     if not os.path.isfile(args.configFile):
@@ -821,9 +838,18 @@ def main():
     for section in config.sections():
         wb = process_database(dict(config.items(section)), section, wb, args.duration,loop)
     loop.close()
-    print("\nWriting output file {}".format(args.outputFile))
-    wb.save(args.outputFile)
+
+    if args.printOnly:
+        print_results(wb)
+    else:
+        print("\nWriting output file {}".format(args.outputFile))
+        wb.save(args.outputFile)
+
     print("Done!")
+
+
+
+
 
 if __name__ == "__main__":
     main()
