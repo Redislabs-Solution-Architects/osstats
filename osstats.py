@@ -8,6 +8,7 @@ import redis
 import openpyxl
 import asyncio
 from tqdm.asyncio import trange
+import logging
 
 
 def get_value(value):
@@ -832,11 +833,32 @@ def main():
     config.read(args.configFile)
     
     print("The output will be stored in {}".format(args.outputFile))
+    
+    # Set up logging to write errors and informational messages to a file
+    logging.basicConfig(
+        filename="execution_log.txt",
+        level=logging.INFO,  # Logs both INFO and ERROR levels
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+    def safe_execute(func, *args, **kwargs):
+        """
+        A wrapper function to execute a callable, log success or exceptions,
+        and continue execution in case of an error.
+        """
+        try:
+            result = func(*args, **kwargs)
+            logging.info("Successfully executed %s with args: %s, kwargs: %s", func.__name__, args, kwargs)
+            return result
+        except Exception as e:
+            logging.error("Error occurred while executing %s with args: %s, kwargs: %s. Error: %s",
+                        func.__name__, args, kwargs, str(e))
 
     wb = create_workbook()
     loop = asyncio.get_event_loop()
     for section in config.sections():
-        wb = process_database(dict(config.items(section)), section, wb, args.duration,loop)
+        # wb = process_database(dict(config.items(section)), section, wb, args.duration,loop)
+        safe_execute(process_database, dict(config.items(section)), section, wb, args.duration, loop)
     loop.close()
 
     if args.printOnly:
@@ -846,8 +868,6 @@ def main():
         wb.save(args.outputFile)
 
     print("Done!")
-
-
 
 
 
