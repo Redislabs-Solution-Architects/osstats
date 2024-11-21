@@ -1,8 +1,0 @@
-2024-11-21 14:37:49,668 - INFO - Successfully executed process_database with arguments ({'host': '127.0.0.1', 'port': '6379', 'tls': '', 'username': '', 'password': ''}, 'redis-db1', <openpyxl.workbook.workbook.Workbook object at 0x106a96900>, 5, <_UnixSelectorEventLoop running=False closed=False debug=False>) and keyword arguments {}
-2024-11-21 14:37:49,668 - INFO - Output from process_database:
-Connecting to redis-db1 database ..
-Error connecting to redis-db1 database
-2024-11-21 14:37:49,668 - INFO - Successfully executed process_database with arguments ({'host': '127.0.0.1', 'port': '63799', 'tls': '', 'username': '', 'password': ''}, 'redis-db2', <openpyxl.workbook.workbook.Workbook object at 0x106a96900>, 5, <_UnixSelectorEventLoop running=False closed=False debug=False>) and keyword arguments {}
-2024-11-21 14:37:49,668 - INFO - Output from process_database:
-Connecting to redis-db2 database ..
-Error connecting to redis-db2 database
