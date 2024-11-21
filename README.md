@@ -56,37 +56,3 @@ When finished do not forget to deactivate the virtual environment
 deactivate
 ```
 
-
-### 2. Running the script from Docker image
-
-**Pre-requisites:** You have Docker engine installed on your machine. Refer this link to install Docker engine: `https://docs.docker.com/engine/install/`
-
-
-Download the repository
-
-```
-git clone https://github.com/Redislabs-Solution-Architects/osstats && cd osstats
-```
-
-Copy the example configuration file and update its contents to match your configuration. Multiple Redis databases can be defined in this files and the script will process all the databases that are defined as separate sections in the config.ini file.
-
-For any clustered Redis database it is important to mention that only a single node of the cluster needs to be defined in the config.ini and not all the nodes. The script will query the node and it will discover all the participating cluster nodes automatically.
-
-```
-cp config.ini.example config.ini && vim config.ini
-```
-
-Execute the script using `docker run` command. Use the -d option to change the duration in minutes the script will wait for running the second set of INFO and INFO COMMANDSTATS commands. By default this flag is set to 5 minutes.
-
-By default, the output will be stored in OSStats.xlsx. Use -c option to change the name of output file.
-
-```
-# pwd
-```
-For example, output of this command is `/a/path/to/osstats`. Use the below docker command to run the script
-
-```
-docker run -v /a/path/to/osstats:/app -t sumitshatwara/redis-osstats python3 osstats.py
-```
-
-
