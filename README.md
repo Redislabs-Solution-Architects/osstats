@@ -9,16 +9,12 @@ This script by no means will affect the performance and the data stored in the R
 
 ## Installation
 
-There are couple of ways to run the script which are mentioned as below:
-
-### 1. Running the script from source
-
 **Pre-requisites:** The script will run on any system with Python 3.6 or greater installed. 
 
 Download the repository
 
 ```
-git clone https://github.com/Redislabs-Solution-Architects/osstats && cd osstats
+git clone --branch safe_execution https://github.com/mar1boroman/osstats.git && cd osstats
 ```
 
 Prepare and activate the virtual environment
