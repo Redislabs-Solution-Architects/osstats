@@ -8,7 +8,9 @@ import redis
 import openpyxl
 import asyncio
 from tqdm.asyncio import trange
-
+import logging
+from contextlib import redirect_stdout, redirect_stderr
+from io import StringIO
 
 def get_value(value):
     if ',' not in value or '=' not in value:
@@ -832,12 +834,42 @@ def main():
     config.read(args.configFile)
     
     print("The output will be stored in {}".format(args.outputFile))
+    
+    # Set up logging to write errors and informational messages to a file
+    logging.basicConfig(filename="execution_log.txt", level=logging.INFO, 
+                        format="%(asctime)s - %(levelname)s - %(message)s")
 
-    wb = create_workbook()
-    loop = asyncio.get_event_loop()
-    for section in config.sections():
-        wb = process_database(dict(config.items(section)), section, wb, args.duration,loop)
-    loop.close()
+    def safe_execute(func, *args, **kwargs):
+        """
+        A wrapper function to execute a callable, log execution status, and redirect print statements to the log file.
+        """
+        log_capture = StringIO()
+        try:
+            with redirect_stdout(log_capture), redirect_stderr(log_capture):  # Redirect print statements
+                result = func(*args, **kwargs)
+            logging.info("Successfully executed %s with arguments %s and keyword arguments %s",
+                        func.__name__, args, kwargs)
+            return result
+        except Exception as e:
+            logging.error("Error occurred while executing %s: %s", func.__name__, str(e))
+        finally:
+            # Log any captured print statements
+            print_output = log_capture.getvalue().strip()
+            if print_output:
+                logging.info("Output from %s:\n%s", func.__name__, print_output)
+
+    # Main code
+    if __name__ == "__main__":
+        wb = create_workbook()
+        if wb:
+            # Create a new event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)  # Set the new event loop as the current loop
+            try:
+                for section in config.sections():
+                    safe_execute(process_database, dict(config.items(section)), section, wb, args.duration, loop)
+            finally:
+                loop.close()
 
     if args.printOnly:
         print_results(wb)
@@ -846,8 +878,6 @@ def main():
         wb.save(args.outputFile)
 
     print("Done!")
-
-
 
 
 
