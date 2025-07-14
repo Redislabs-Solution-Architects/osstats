@@ -135,3 +135,6 @@ config.ini
 # Excel files
 *.xlsx
 *.csv
+
+dump.rdb
+*.rdb

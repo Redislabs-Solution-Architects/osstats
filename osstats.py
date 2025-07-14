@@ -83,36 +83,37 @@ def get_command_by_args(cmds1, cmds2, *args):
     return count
 
 
-def get_redis_client(host, port, password, username, tls):
-    if not password:
-        client = redis.Redis(
-            host = host,
-            port = port,
-            socket_timeout = 10,
-            decode_responses=True,
-            ssl = False if not tls else True
-        )
+def get_redis_client(host, port, password=None, username=None, tls=False,
+                     ca_cert=None, client_cert=None, client_key=None):
+    
+    connection_args = {
+        'host': host,
+        'port': port,
+        'socket_timeout': 10,
+        'decode_responses': True
+    }
+
+    if password:
+        connection_args['password'] = password
+    if username:
+        connection_args['username'] = username
+
+    if tls:
+        connection_args.update({
+            'ssl': True,
+            'ssl_cert_reqs': 'required'
+        })
+        if ca_cert:
+            connection_args['ssl_ca_certs'] = ca_cert
+        if client_cert and client_key:
+            connection_args['ssl_certfile'] = client_cert
+            connection_args['ssl_keyfile'] = client_key
     else:
-        if not username:
-            client = redis.Redis(
-                host = host,
-                port = port,
-                password = password,
-                socket_timeout = 10,
-                decode_responses=True,
-                ssl = False if not tls else True
-            )   
-        else:
-            client = redis.Redis(
-                host = host,
-                port = port,
-                username = username,
-                password = password,
-                socket_timeout = 10,
-                decode_responses=True,
-                ssl = False if not tls else True
-            )
+        connection_args['ssl'] = False
+    
+    client = redis.Redis(**connection_args)
     return client
+
 
 
 async def sleep(duration):
@@ -140,11 +141,14 @@ async def process_node(section, config, node, is_master_shard, duration):
     print("Processing node {}:{}".format(params[0], params[1]))
 
     client = get_redis_client(
-        params[0], 
-        params[1], 
-        config['password'], 
-        config['username'], 
-        config['tls']
+        host=config.get('host'),
+        port=int(config.get('port', 6379)),
+        password=config.get('password') or None,
+        username=config.get('username') or None,
+        tls=config.getboolean('tls', fallback=False),
+        ca_cert=config.get('ca_cert', fallback=None) or None,
+        client_cert=config.get('client_cert', fallback=None) or None,
+        client_key=config.get('client_key', fallback=None) or None
     )
 
     result = {}
@@ -715,11 +719,14 @@ def process_database(config, section, workbook, duration,loop):
     print("\nConnecting to {} database ..".format(section))
 
     client = get_redis_client(
-        config['host'], 
-        config['port'], 
-        config['password'], 
-        config['username'], 
-        config['tls']
+        host=config.get('host'),
+        port=int(config.get('port', 6379)),
+        password=config.get('password') or None,
+        username=config.get('username') or None,
+        tls=config.getboolean('tls', fallback=False),
+        ca_cert=config.get('ca_cert', fallback=None) or None,
+        client_cert=config.get('client_cert', fallback=None) or None,
+        client_key=config.get('client_key', fallback=None) or None
     )
 
     try:
@@ -835,8 +842,12 @@ def main():
 
     wb = create_workbook()
     loop = asyncio.get_event_loop()
+
+    #   loop = asyncio.new_event_loop()
+    #   asyncio.set_event_loop(loop)
+
     for section in config.sections():
-        wb = process_database(dict(config.items(section)), section, wb, args.duration,loop)
+        wb = process_database(config[section], section, wb, args.duration, loop)
     loop.close()
 
     if args.printOnly:
