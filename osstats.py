@@ -111,8 +111,6 @@ def get_redis_client(host, port, password=None, username=None, tls=False,
     else:
         connection_args['ssl'] = False
     
-    print(connection_args) 
-
     client = redis.Redis(**connection_args)
     return client
 
