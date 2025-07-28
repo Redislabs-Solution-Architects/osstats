@@ -2,11 +2,11 @@
 host        = 127.0.0.1
 port        = 6379
 ; Leave empty if not used
-tls         = 
-; Usernane in case ACL access in enabled
-username    = 
+tls         =
+; Username in case ACL access in enabled
+username    =
 ; Password that applies either in db or user (ACL)
-password    = 
+password    =
 ; ca_cert     = /path/to/ca.crt
 ; client_cert = /path/to/client.crt
 ; client_key  = /path/to/client.key
@@ -16,11 +16,11 @@ password    =
 host        = 127.0.0.1
 port        = 63799
 ; Leave empty if not used
-tls         = 
-; Usernane in case ACL access in enabled
-username    = 
+tls         =
+; Username in case ACL access in enabled
+username    =
 ; Password that applies either in db or user (ACL)
-password    = 
+password    =
 ; ca_cert     = /path/to/ca.crt
 ; client_cert = /path/to/client.crt
 ; client_key  = /path/to/client.key

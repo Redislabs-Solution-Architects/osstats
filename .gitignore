@@ -138,3 +138,6 @@ config.ini
 
 dump.rdb
 *.rdb
+
+# Claude
+.claude

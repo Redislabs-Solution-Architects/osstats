@@ -15,7 +15,7 @@ echo "Port      : $PORT"
 echo ""
 echo "Counting nb of increments:"
 echo "--------------------------"
-for (( c=1; c<=1000000; c++ ))
+for (( c=1; c<=10000; c++ ))
 do
     cat << EOF | redis-cli -h $HOST -p $PORT > /dev/null
 SETBIT bit$c $c 1

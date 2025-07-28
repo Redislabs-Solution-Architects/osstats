@@ -1,8 +1,8 @@
 # OSStats
 
-OSStats is a tool for extracting Redis database metrics. The script is able to process multiple Redis databases, both single instance and clustered ones. 
+OSStats is a tool for extracting Redis database metrics. The script is able to process multiple Redis databases, both single instance and clustered ones.
 
-The script will automatically parse all the Redis databases defined in the configuration file. It will connect to the Redis databases and it will run an INFO and an INFO COMMANDSTATS command. It will wait for a predifined period (5 minutes by default) and it will run the above commands one more time. It will then subtract the command metrics and it will calculate a precise estimate for the throughput the database is getting at the time the script is running. It is highly recommended to use the script during **peak hours** for getting more reliable results. 
+The script will automatically parse all the Redis databases defined in the configuration file. It will connect to the Redis databases and it will run an INFO and an INFO COMMANDSTATS command. It will wait for a predefined period (5 minutes by default) and it will run the above commands one more time. It will then subtract the command metrics and it will calculate a precise estimate for the throughput the database is getting at the time the script is running. It is highly recommended to use the script during **peak hours** for getting more reliable results.
 
 This script by no means will affect the performance and the data stored in the Redis databases it is scanning.
 
@@ -11,9 +11,20 @@ This script by no means will affect the performance and the data stored in the R
 
 There are couple of ways to run the script which are mentioned as below:
 
+## Load Testing
+
+Generate Redis test data for OSStats analysis:
+
+```bash
+# Run load generator (10K operations, ~1 minute)
+./load-generator.sh
+```
+
+**Prerequisites:** Redis server on localhost:6379 with `redis-cli` installed.
+
 ### 1. Running the script from source
 
-**Pre-requisites:** The script will run on any system with Python 3.6 or greater installed. 
+**Pre-requisites:** The script will run on any system with Python 3.9 or greater installed.
 
 Download the repository
 
