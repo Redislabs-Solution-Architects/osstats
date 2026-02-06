@@ -11,15 +11,6 @@ This script by no means will affect the performance and the data stored in the R
 
 There are couple of ways to run the script which are mentioned as below:
 
-## Load Testing
-
-Generate Redis test data for OSStats analysis:
-
-```bash
-# Run load generator (10K operations, ~1 minute)
-./load-generator.sh
-```
-
 **Prerequisites:** Redis server on localhost:6379 with `redis-cli` installed.
 
 ### 1. Running the script from source
@@ -100,4 +91,11 @@ For example, output of this command is `/a/path/to/osstats`. Use the below docke
 # docker run -v /a/path/to/osstats:/app -t sumitshatwara/redis-osstats python3 osstats.py
 ```
 
+## Load Testing
 
+Generate Redis test data for OSStats analysis:
+
+```bash
+# Run load generator (10K operations, ~1 minute)
+./load-generator.sh
+```
