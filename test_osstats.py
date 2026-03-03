@@ -132,8 +132,8 @@ class TestProcessNode:
 
         def mock_get(key, default=None, fallback=None):
             values = {
-                "host": "localhost",
-                "port": "6379",
+                "host": "seed-host",
+                "port": "7000",
                 "password": None,
                 "username": None,
                 "ca_cert": None,
@@ -176,12 +176,16 @@ class TestProcessNode:
             {"cmdstat_get": {"calls": 150, "usec": 1500}},
         ]
 
-        result = await process_node("test-section", config, "localhost:6379", True, 1)
+        result = await process_node("test-section", config, "node-1.internal:6380", True, 1)
 
         assert result is not None
         assert result["Source"] == "OSS"
         assert result["ClusterId"] == "test-section"
         assert result["NodeRole"] == "Master"
+        assert result["NodeId"] == "node-1-internal"
+        mock_get_client.assert_called_once()
+        assert mock_get_client.call_args.kwargs["host"] == "node-1.internal"
+        assert mock_get_client.call_args.kwargs["port"] == 6380
 
 
 if __name__ == "__main__":

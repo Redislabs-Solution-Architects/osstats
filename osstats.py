@@ -141,12 +141,13 @@ async def process_node(section, config, node, is_master_shard, duration):
     Returns:
         command stats output
     """
-    params = node.split(":")
-    print("Processing node {}:{}".format(params[0], params[1]))
+    node_endpoint = node.split("@", 1)[0]
+    node_host, node_port = node_endpoint.rsplit(":", 1)
+    print("Processing node {}:{}".format(node_host, node_port))
 
     client = get_redis_client(
-        host=config.get("host"),
-        port=int(config.get("port", 6379)),
+        host=node_host,
+        port=int(node_port),
         password=config.get("password") or None,
         username=config.get("username") or None,
         tls=config.getboolean("tls", fallback=False),
@@ -170,7 +171,7 @@ async def process_node(section, config, node, is_master_shard, duration):
 
     result["Source"] = "OSS"
     result["ClusterId"] = section
-    result["NodeId"] = params[0].replace(".", "-")
+    result["NodeId"] = node_host.replace(".", "-")
     result["NodeRole"] = "Master" if is_master_shard else "Replica"
     result["RedisVersion"] = info2["redis_version"]
     result["OS"] = info2["os"]
