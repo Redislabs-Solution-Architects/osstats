@@ -789,7 +789,16 @@ def process_database(config, section, workbook, duration, loop):
 
     info = client.execute_command("info")
     if "cluster_enabled" in info and info["cluster_enabled"] == 1:
-        nodes = client.execute_command("cluster nodes")
+        cluster_nodes = client.execute_command("cluster nodes")
+        config_host = config.get("host")
+        nodes = {}
+        for node_addr, stats in cluster_nodes.items():
+            host, port = node_addr.rsplit(":", 1)
+            if host != config_host:
+                remapped_addr = "%s:%s" % (config_host, port)
+                nodes[remapped_addr] = stats
+            else:
+                nodes[node_addr] = stats
     else:
         nodes = {
             "%s:%s"
