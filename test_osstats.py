@@ -183,6 +183,78 @@ class TestProcessNode:
         assert result["ClusterId"] == "test-section"
         assert result["NodeRole"] == "Master"
 
+    @pytest.mark.asyncio
+    @patch("osstats.get_redis_client")
+    @patch("osstats.parse_response")
+    @patch("osstats.sleep")
+    async def test_process_node_connects_to_discovered_node(
+        self, mock_sleep, mock_parse, mock_get_client
+    ):
+        """Verify that process_node connects to the discovered node address,
+        not the config entry-point. This matters in cluster mode where the
+        discovered nodes differ from the config host/port."""
+        config = Mock()
+
+        def mock_get(key, default=None, fallback=None):
+            values = {
+                "host": "entry-point.example.com",
+                "port": "6379",
+                "password": "secret",
+                "username": "admin",
+                "ca_cert": None,
+                "client_cert": None,
+                "client_key": None,
+            }
+            return values.get(key, fallback or default)
+
+        config.get.side_effect = mock_get
+        config.getboolean.return_value = False
+
+        mock_client = Mock()
+        mock_get_client.return_value = mock_client
+
+        mock_info_dict = {
+            "redis_version": "6.2.7",
+            "os": "Linux",
+            "total_system_memory": 8589934592,
+            "used_memory_peak": 1048576,
+            "connected_clients": 10,
+            "cluster_enabled": 1,
+            "connected_slaves": 1,
+            "total_commands_processed": 1000,
+            "db0": {"keys": 500, "expires": 0},
+        }
+        mock_info_dict2 = mock_info_dict.copy()
+        mock_info_dict2["total_commands_processed"] = 1200
+
+        mock_client.execute_command.side_effect = [
+            "cmdstat_get:calls=100,usec=1000",
+            mock_info_dict,
+            "cmdstat_get:calls=150,usec=1500",
+            mock_info_dict2,
+        ]
+        mock_parse.side_effect = [
+            {"cmdstat_get": {"calls": 100, "usec": 1000}},
+            {"cmdstat_get": {"calls": 150, "usec": 1500}},
+        ]
+
+        discovered_node = "10.73.20.57:6380"
+        result = await process_node("test-cluster", config, discovered_node, True, 1)
+
+        mock_get_client.assert_called_once_with(
+            host="10.73.20.57",
+            port=6380,
+            password="secret",
+            username="admin",
+            tls=False,
+            ca_cert=None,
+            client_cert=None,
+            client_key=None,
+        )
+        assert result["NodeId"] == "10-73-20-57"
+        assert result["NodeRole"] == "Master"
+        assert result["CurrItems"] == 500
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
