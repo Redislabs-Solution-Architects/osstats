@@ -155,6 +155,16 @@ async def process_node(section, config, node, is_master_shard, duration):
         client_key=config.get("client_key", fallback=None) or None,
     )
 
+    try:
+        client.ping()
+    except Exception as e:
+        print(
+            "Warning: Cannot connect to cluster node {}:{} - {}".format(
+                params[0], params[1], str(e)
+            )
+        )
+        return None
+
     result = {}
 
     # first run

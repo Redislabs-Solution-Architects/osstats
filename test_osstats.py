@@ -252,6 +252,37 @@ class TestProcessNode:
             client_key=None,
         )
 
+    @pytest.mark.asyncio
+    @patch("osstats.get_redis_client")
+    async def test_process_node_handles_unreachable_node(self, mock_get_client):
+        """Verify that process_node gracefully handles unreachable cluster nodes
+        instead of crashing. This is important when CLUSTER NODES returns
+        internal IPs that aren't reachable from the client."""
+        config = Mock()
+
+        def mock_get(key, default=None, fallback=None):
+            values = {
+                "password": None,
+                "username": None,
+                "ca_cert": None,
+                "client_cert": None,
+                "client_key": None,
+            }
+            return values.get(key, fallback or default)
+
+        config.get.side_effect = mock_get
+        config.getboolean.return_value = False
+
+        mock_client = Mock()
+        mock_client.ping.side_effect = Exception("Connection refused")
+        mock_get_client.return_value = mock_client
+
+        result = await process_node(
+            "test-cluster", config, "10.0.0.5:6379", True, 1
+        )
+
+        assert result is None
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
