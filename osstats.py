@@ -157,6 +157,16 @@ async def process_node(section, config, node, is_master_shard, duration):
         client_key=config.get("client_key", fallback=None) or None,
     )
 
+    try:
+        client.ping()
+    except Exception as e:
+        print(
+            "Warning: Unable to connect to node {}:{} - {}".format(
+                node_host, node_port, e
+            )
+        )
+        return None
+
     result = {}
 
     # first run

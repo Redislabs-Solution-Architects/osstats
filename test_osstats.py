@@ -255,6 +255,41 @@ class TestProcessNode:
         assert result["NodeRole"] == "Master"
         assert result["CurrItems"] == 500
 
+    @pytest.mark.asyncio
+    @patch("osstats.get_redis_client")
+    @patch("osstats.sleep")
+    async def test_process_node_unreachable_returns_none(
+        self, mock_sleep, mock_get_client
+    ):
+        """When a discovered cluster node is unreachable, process_node should
+        return None instead of crashing the entire collection."""
+        config = Mock()
+
+        def mock_get(key, default=None, fallback=None):
+            values = {
+                "host": "entry-point.example.com",
+                "port": "6379",
+                "password": None,
+                "username": None,
+                "ca_cert": None,
+                "client_cert": None,
+                "client_key": None,
+            }
+            return values.get(key, fallback or default)
+
+        config.get.side_effect = mock_get
+        config.getboolean.return_value = False
+
+        mock_client = Mock()
+        mock_client.ping.side_effect = redis.exceptions.ConnectionError(
+            "Error connecting to 10.73.20.99:6379"
+        )
+        mock_get_client.return_value = mock_client
+
+        result = await process_node("test-cluster", config, "10.73.20.99:6379", True, 1)
+
+        assert result is None
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
