@@ -145,8 +145,8 @@ async def process_node(section, config, node, is_master_shard, duration):
     print("Processing node {}:{}".format(params[0], params[1]))
 
     client = get_redis_client(
-        host=config.get("host"),
-        port=int(config.get("port", 6379)),
+        host=params[0],
+        port=int(params[1]),
         password=config.get("password") or None,
         username=config.get("username") or None,
         tls=config.getboolean("tls", fallback=False),
@@ -154,6 +154,16 @@ async def process_node(section, config, node, is_master_shard, duration):
         client_cert=config.get("client_cert", fallback=None) or None,
         client_key=config.get("client_key", fallback=None) or None,
     )
+
+    try:
+        client.ping()
+    except Exception as e:
+        print(
+            "Warning: Cannot connect to cluster node {}:{} - {}".format(
+                params[0], params[1], str(e)
+            )
+        )
+        return None
 
     result = {}
 

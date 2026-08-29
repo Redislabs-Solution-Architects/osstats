@@ -183,6 +183,106 @@ class TestProcessNode:
         assert result["ClusterId"] == "test-section"
         assert result["NodeRole"] == "Master"
 
+    @pytest.mark.asyncio
+    @patch("osstats.get_redis_client")
+    @patch("osstats.parse_response")
+    @patch("osstats.sleep")
+    async def test_process_node_connects_to_correct_cluster_node(
+        self, mock_sleep, mock_parse, mock_get_client
+    ):
+        """Verify that process_node connects to the actual cluster node address,
+        not the config entry point. This is critical for cluster mode where
+        each node must be queried independently."""
+        config = Mock()
+
+        def mock_get(key, default=None, fallback=None):
+            values = {
+                "host": "entry-point.example.com",
+                "port": "6379",
+                "password": "secret",
+                "username": "admin",
+                "ca_cert": None,
+                "client_cert": None,
+                "client_key": None,
+            }
+            return values.get(key, fallback or default)
+
+        config.get.side_effect = mock_get
+        config.getboolean.return_value = False
+
+        mock_client = Mock()
+        mock_get_client.return_value = mock_client
+
+        mock_info_dict = {
+            "redis_version": "6.2.0",
+            "os": "Linux",
+            "total_system_memory": 8589934592,
+            "used_memory_peak": 1048576,
+            "connected_clients": 10,
+            "cluster_enabled": 1,
+            "total_commands_processed": 1000,
+            "db0": {"keys": 100, "expires": 0},
+        }
+        mock_info_dict2 = mock_info_dict.copy()
+        mock_info_dict2["total_commands_processed"] = 1200
+
+        mock_client.execute_command.side_effect = [
+            "cmdstat_get:calls=100,usec=1000",
+            mock_info_dict,
+            "cmdstat_get:calls=150,usec=1500",
+            mock_info_dict2,
+        ]
+
+        mock_parse.side_effect = [
+            {"cmdstat_get": {"calls": 100, "usec": 1000}},
+            {"cmdstat_get": {"calls": 150, "usec": 1500}},
+        ]
+
+        cluster_node = "192.168.1.100:7001"
+        await process_node("test-cluster", config, cluster_node, False, 1)
+
+        mock_get_client.assert_called_once_with(
+            host="192.168.1.100",
+            port=7001,
+            password="secret",
+            username="admin",
+            tls=False,
+            ca_cert=None,
+            client_cert=None,
+            client_key=None,
+        )
+
+    @pytest.mark.asyncio
+    @patch("osstats.get_redis_client")
+    async def test_process_node_handles_unreachable_node(self, mock_get_client):
+        """Verify that process_node gracefully handles unreachable cluster nodes
+        instead of crashing. This is important when CLUSTER NODES returns
+        internal IPs that aren't reachable from the client."""
+        config = Mock()
+
+        def mock_get(key, default=None, fallback=None):
+            values = {
+                "password": None,
+                "username": None,
+                "ca_cert": None,
+                "client_cert": None,
+                "client_key": None,
+            }
+            return values.get(key, fallback or default)
+
+        config.get.side_effect = mock_get
+        config.getboolean.return_value = False
+
+        mock_client = Mock()
+        mock_client.ping.side_effect = Exception("Connection refused")
+        mock_get_client.return_value = mock_client
+
+        result = await process_node(
+            "test-cluster", config, "10.0.0.5:6379", True, 1
+        )
+
+        assert result is None
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
